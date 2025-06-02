@@ -1,0 +1,28 @@
+# Flask implementation with logging and error handling
+from flask import Flask, jsonify, request
+import os
+import logging
+
+app = Flask(__name__)
+API_KEY = os.getenv("API_KEY", "my-secret-key")
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+
+def check_api_key():
+    key = request.headers.get("X-API-Key")
+    if not key:
+        logging.warning(f"Missing API key from {request.remote_addr}")
+        return False
+    if key != API_KEY:
+        logging.warning(f"Invalid API key from {request.remote_addr}")
+        return False
+    logging.info(f"Successful API key auth from {request.remote_addr}")
+    return True
+
+@app.route("/protected", methods=["GET"])
+def protected():
+    if not check_api_key():
+        return jsonify({"error": "Invalid or missing API key", "status": "unauthorized"}), 401
+    return jsonify({"message": "Access granted", "data": "Sensitive info", "status": "success"}), 200
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000, debug=False)
