@@ -1,0 +1,40 @@
+# FastAPI JWT implementation with enhanced features
+from fastapi import FastAPI, HTTPException, Depends
+from fastapi.security import OAuth2PasswordBearer
+from jose import JWTError, jwt
+from datetime import datetime, timedelta
+import logging
+
+app = FastAPI()
+SECRET_KEY = "your-secret-key"
+ALGORITHM = "HS256"
+TOKEN_EXPIRE_MINUTES = 30
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+
+def create_token(data: dict):
+    to_encode = data.copy()
+    expire = datetime.utcnow() + timedelta(minutes=TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire, "iss": "auth-server", "aud": "api-client"})
+    token = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    logging.info("JWT token created")
+    return token
+
+async def verify_token(token: str = Depends(oauth2_scheme)):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM], options={"verify_aud": True, "verify_iss": True})
+        logging.info("JWT token verified")
+        return payload
+    except JWTError as e:
+        logging.error(f"Invalid JWT token: {str(e)}")
+        raise HTTPException(status_code=401, detail={"error": "Invalid token", "status": "unauthorized"})
+
+@app.post("/token")
+async def login():
+    user_data = {"sub": "user123", "role": "admin"}
+    token = create_token(user_data)
+    return {"access_token": token, "token_type": "bearer", "expires_in": TOKEN_EXPIRE_MINUTES}
+
+@app.get("/secure", dependencies=[Depends(verify_token)])
+async def secure():
+    return {"message": "JWT access granted", "data": "Protected resource", "status": "success"}
