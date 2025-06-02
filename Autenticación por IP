@@ -1,0 +1,19 @@
+# Flask IP restriction with logging and error handling
+from flask import Flask, jsonify, request
+import logging
+
+app = Flask(__name__)
+ALLOWED_IPS = {"192.168.1.100", "127.0.0.1"}
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+
+@app.route("/restricted", methods=["GET"])
+def restricted():
+    client_ip = request.remote_addr
+    if client_ip not in ALLOWED_IPS:
+        logging.error(f"Access denied for IP: {client_ip}")
+        return jsonify({"error": "IP not allowed", "ip": client_ip, "status": "forbidden"}), 403
+    logging.info(f"Access granted for IP: {client_ip}")
+    return jsonify({"message": "Access granted", "ip": client_ip, "status": "success"}), 200
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000, debug=False)
