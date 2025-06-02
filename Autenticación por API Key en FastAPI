@@ -1,0 +1,18 @@
+# FastAPI implementation with logging and error handling
+from fastapi import FastAPI, HTTPException, Header
+import logging
+
+app = FastAPI()
+API_KEY = "my-secret-key"
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+
+@app.get("/protected")
+async def protected(x_api_key: str = Header(default=None)):
+    if not x_api_key:
+        logging.warning("Missing API key from client")
+        raise HTTPException(status_code=401, detail={"error": "Missing API key", "status": "unauthorized"})
+    if x_api_key != API_KEY:
+        logging.warning("Invalid API key from client")
+        raise HTTPException(status_code=401, detail={"error": "Invalid API key", "status": "unauthorized"})
+    logging.info("Successful API key auth")
+    return {"message": "Access granted", "data": "Sensitive info", "status": "success"}
