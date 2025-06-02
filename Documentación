@@ -1,0 +1,108 @@
+openapi: 3.0.3
+info:
+  title: API with Advanced Authentication
+  description: API with API Key, IP, and JWT authentication mechanisms
+  version: 1.0.0
+paths:
+  /protected:
+    get:
+      summary: Protected endpoint with API Key
+      description: Requires a valid API key in the X-API-Key header
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Access granted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: {type: string, example: "Access granted"}
+                  data: {type: string, example: "Sensitive info"}
+                  status: {type: string, example: "success"}
+        '401':
+          description: Invalid or missing API key
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: {type: string, example: "Invalid or missing API key"}
+                  status: {type: string, example: "unauthorized"}
+  /restricted:
+    get:
+      summary: Restricted endpoint by IP
+      description: Allows access only from specified IP addresses
+      responses:
+        '200':
+          description: Access granted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: {type: string, example: "Access granted"}
+                  ip: {type: string, example: "127.0.0.1"}
+                  status: {type: string, example: "success"}
+        '403':
+          description: IP not allowed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: {type: string, example: "IP not allowed"}
+                  ip: {type: string, example: "192.168.2.1"}
+                  status: {type: string, example: "forbidden"}
+  /token:
+    post:
+      summary: Generate JWT token
+      description: Creates a JWT token for authenticated access
+      responses:
+        '200':
+          description: Token generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token: {type: string, example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."}
+                  token_type: {type: string, example: "bearer"}
+                  expires_in: {type: integer, example: 30}
+  /secure:
+    get:
+      summary: Secure endpoint with JWT
+      description: Requires a valid JWT token for access
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Access granted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: {type: string, example: "JWT access granted"}
+                  data: {type: string, example: "Protected resource"}
+                  status: {type: string, example: "success"}
+        '401':
+          description: Invalid token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: {type: string, example: "Invalid token"}
+                  status: {type: string, example: "unauthorized"}
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
